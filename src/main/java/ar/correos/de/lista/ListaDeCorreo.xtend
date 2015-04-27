@@ -10,11 +10,13 @@ import org.eclipse.xtend.lib.annotations.Accessors
 
 class ListaDeCorreo {
 	
+	@Accessors 
 	List<Usuario> miembros
 	
+	@Accessors 
+	List<Pendiente> pendientes = newArrayList()
+
 	EnviadorDeMail enviadorDeMail
-	
-	@Accessors List<Pendiente> pendientes = newArrayList()
 	
 	new(EnviadorDeMail enviadorDeMail, ArrayList<Usuario> usuarios) {
 		this.miembros = usuarios
@@ -22,8 +24,15 @@ class ListaDeCorreo {
 	}
 	
 	def post(Mail mail) {
+		if (!hayUsuarios) {
+			return
+		}
 		validarExistenciaDeRemitente(mail)
 		miembros.clone.forEach[ enviar(mail, it) ]
+	}
+	
+	def hayUsuarios() {
+		!miembros.empty
 	}
 	
 	def validarExistenciaDeRemitente(Mail mail) {

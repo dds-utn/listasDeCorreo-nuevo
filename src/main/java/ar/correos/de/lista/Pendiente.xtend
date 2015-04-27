@@ -1,7 +1,9 @@
 package ar.correos.de.lista
 
+import org.eclipse.xtend.lib.annotations.Accessors
+
 class Pendiente {
-	
+	@Accessors
 	Usuario usuario
 	
 	Mail mail

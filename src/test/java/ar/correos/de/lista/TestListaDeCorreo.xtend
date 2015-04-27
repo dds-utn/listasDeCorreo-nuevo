@@ -1,21 +1,19 @@
 package ar.correos.de.lista
 
 import ar.correos.de.lista.mailSender.EnviadorDeMail
+import ar.correos.de.lista.mailSender.excepciones.CasillaNoExisteException
+import ar.correos.de.lista.mailSender.excepciones.ServidorNoRespondeException
 import org.junit.Test
 
+import static org.assertj.core.api.Assertions.*
 import static org.mockito.Matchers.*
 import static org.mockito.Mockito.*
-import ar.correos.de.lista.mailSender.excepciones.CasillaNoExisteException
-import static org.assertj.core.api.Assertions.*
-import ar.correos.de.lista.mailSender.excepciones.ServidorNoRespondeException
-import org.junit.Ignore
 
 class TestListaDeCorreo {
 	
 	String direccion1 = "user1@dom.com" 
 	
 	@Test
-	@Ignore("este test deja de tener sentido porque se contradice con la excepcion del remitente")
 	def void testUnaListaSinUsuariosNoMandaMails(){
 		
 		val enviadorDeMail = mock(EnviadorDeMail)
@@ -27,7 +25,7 @@ class TestListaDeCorreo {
 	}
 	
 	@Test
-	def void test1(){
+	def void testLaListaConDosUsuariosLeMandaElMailAAmbos(){
 		
 		val enviadorDeMail = mock(EnviadorDeMail)
 		val direccion2 = "user2@dom.com" 
@@ -43,7 +41,7 @@ class TestListaDeCorreo {
 	}
 	
 	@Test
-	def void test2(){
+	def void testCuandoMandoMailAUnaCasillaQueNoExisteLoSacaDeLaLista(){
 		
 		val enviadorDeMail = mock(EnviadorDeMail)
 		doThrow(new CasillaNoExisteException)
@@ -52,17 +50,19 @@ class TestListaDeCorreo {
 			
 		val direccion2 = "correo@existente.not" 
 		
-		val usuarios = newArrayList(new Usuario(direccion1), new Usuario(direccion2))
+		val usuarioExistente = new Usuario(direccion1)
+		val usuarios = newArrayList(usuarioExistente, new Usuario(direccion2))
 		val mail = getMail
 		val lista = new ListaDeCorreo(enviadorDeMail, usuarios) 
 		
 		lista.post(mail)		
 		
 		verify(enviadorDeMail).enviar(mail, direccion1)
+		assertThat(lista.miembros).containsOnly(usuarioExistente)
 	}
 	
 	@Test
-	def void test3(){
+	def void testCuandoMandoMailYFallaElServidorPoneEnPendienteAlQueFallo(){
 		
 		val enviadorDeMail = mock(EnviadorDeMail)
 		doThrow(new ServidorNoRespondeException)
@@ -70,7 +70,8 @@ class TestListaDeCorreo {
 			.enviar(anyObject, eq("correo@server.not"))	
 		val direccion2 = "correo@server.not" 
 		
-		val usuarios = newArrayList(new Usuario(direccion1), new Usuario(direccion2))
+		val usuarioConServerFallido = new Usuario(direccion2)
+		val usuarios = newArrayList(usuarioConServerFallido, new Usuario(direccion1))
 		val mail = getMail
 		val lista = new ListaDeCorreo(enviadorDeMail, usuarios) 
 		
@@ -78,6 +79,7 @@ class TestListaDeCorreo {
 		
 	 	verify(enviadorDeMail).enviar(mail, direccion1)
 	 	assertThat(lista.pendientes).hasSize(1)
+	 	assertThat(lista.pendientes.get(0).usuario).isEqualTo(usuarioConServerFallido)
 	}
 	
 	@Test
@@ -87,7 +89,7 @@ class TestListaDeCorreo {
 		
 		
 		val mail = getMail
-		val lista = new ListaDeCorreo(enviadorDeMail, newArrayList()) 
+		val lista = new ListaDeCorreo(enviadorDeMail, newArrayList(new Usuario("otraDireccion@quenoExiste.com"))) 
 		try {
 			lista.post(mail)		
 			failBecauseExceptionWasNotThrown(UsuarioNoEstaEnListaException)			
